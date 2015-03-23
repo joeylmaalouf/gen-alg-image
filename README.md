@@ -1,1 +1,4 @@
-# gen-alg-image
+gen-alg-image
+=============
+
+Genetic algorithm image approximator.
