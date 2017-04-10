@@ -1,7 +1,8 @@
 from PIL import Image, ImageDraw
 import os
-from random import randint
+from random import choice, randint
 import sys
+from time import time
 
 
 class Triangle (object):
@@ -43,9 +44,10 @@ class Triangle (object):
 
 
 class Individual (object):
-  def __init__ (self, resolution):
+  def __init__ (self, resolution, numchrom):
     self.resolution = resolution
-    self.solution = []
+    self.numchrom = numchrom
+    self.solution = [Triangle(self.resolution) for _ in range(numchrom)]
     self.fitness = 0
 
   def make_image (self):
@@ -61,7 +63,8 @@ class Individual (object):
                              triangle.attributes["a"]))
 
   def evolve (self):
-      self.solution.append(Triangle(self.resolution))
+    target = choice(self.solution)
+    target.randomize(choice(target.attributes.keys()))
 
   def payoff (self, goal_access):
     self_access = self.image.load()
@@ -76,19 +79,19 @@ class Individual (object):
     self.fitness = diff ** 2
 
   def copy (self):
-    copy = Individual(self.resolution)
+    copy = Individual(self.resolution, self.numchrom)
     copy.solution = [Triangle(self.resolution, triangle.attributes) for triangle in self.solution]
     return copy
 
 
-def main (goal_path, popsize, generations, step):
+def main (goal_path, popsize, numchrom, generations, step):
   folder_path = goal_path + " images"
   if not os.path.isdir(folder_path):
     os.mkdir(folder_path)
   goal_image = Image.open(goal_path).convert("RGB")
   goal_access = goal_image.load()
   resolution = goal_image.size
-  population = [Individual(resolution) for i in range(popsize)]
+  population = [Individual(resolution, numchrom) for i in range(popsize)]
   generation = 0
   while(generation < generations):
     for individual in population:
@@ -97,8 +100,8 @@ def main (goal_path, popsize, generations, step):
     population.sort(key = lambda x: x.fitness)
     if generation % step == 0:
       population[0].image.save(
-        "{0}/gen {1}, off by {2}.jpg".format(
-          folder_path, generation, population[0].fitness
+        "{0}/{1}-{2}-{3}.jpg".format(
+          folder_path, int(time()), generation, population[0].fitness
         )
       )
     for i in range(len(population)):
@@ -111,6 +114,7 @@ def main (goal_path, popsize, generations, step):
 if __name__ == "__main__":
   goal_path   = "goal.jpg" if len(sys.argv) < 2 else sys.argv[1]
   popsize     = 1000       if len(sys.argv) < 3 else int(sys.argv[2])
-  generations = 2001       if len(sys.argv) < 4 else int(sys.argv[3])
-  step        = 100        if len(sys.argv) < 5 else int(sys.argv[4])
-  main(goal_path, popsize, generations, step)
+  numchrom    = 100        if len(sys.argv) < 4 else int(sys.argv[3])
+  generations = 2001       if len(sys.argv) < 5 else int(sys.argv[4])
+  step        = 100        if len(sys.argv) < 6 else int(sys.argv[5])
+  main(goal_path, popsize, numchrom, generations, step)
